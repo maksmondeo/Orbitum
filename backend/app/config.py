@@ -5,6 +5,7 @@ from pathlib import Path
 import numpy as np
 
 DATABASE_URL = os.environ["DATABASE_URL"]
+TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "")
 DATA = Path(os.environ.get("DATA_DIR", "/data/backtest"))   # cache runów, ERA5 i mapy modeli (wspólne z notebookiem)
 S3 = "https://openmeteo.s3.amazonaws.com"
 

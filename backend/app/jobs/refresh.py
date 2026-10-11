@@ -4,6 +4,7 @@ import pandas as pd
 
 from app import db
 from app.config import MODELS
+from app.jobs.alerts import check_alerts
 from app.weather import backtest, cache, model_map
 from app.weather.s3 import latest_run
 
@@ -21,3 +22,4 @@ def refresh():
         mm = model_map.load(variable)
         fc = np.stack([latest_forecast(variable, m, slot) for m in mm.attrs["models"]])
         db.write_forecast(variable, slot, model_map.blend(fc, mm, slot))
+    check_alerts()

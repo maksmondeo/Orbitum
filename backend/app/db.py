@@ -37,6 +37,30 @@ def write_forecast(variable, slot, values):
                     copy.write_row((variable, float(LAT[i]), float(LON[j]), times[t], float(v)))
 
 
+def alert_hits():
+    """Godziny prognozy spełniające warunek aktywnego alertu, jeszcze niewysłane; dla obszaru wartość skrajna."""
+    return execute("""
+        SELECT a.id, a.variable, a.op, a.threshold, a.lat_min, a.lat_max, a.lon_min, a.lon_max, c.kind, c.target,
+               f.valid_time, CASE a.op WHEN '<' THEN min(f.value) ELSE max(f.value) END AS value
+        FROM alerts a
+        JOIN channels c ON c.id = a.channel_id
+        JOIN forecast f ON f.variable = a.variable
+         AND f.lat BETWEEN a.lat_min AND a.lat_max AND f.lon BETWEEN a.lon_min AND a.lon_max
+         AND f.valid_time BETWEEN coalesce(a.valid_from, '-infinity') AND coalesce(a.valid_to, 'infinity')
+        WHERE a.active
+          AND CASE a.op WHEN '<' THEN f.value < a.threshold ELSE f.value > a.threshold END
+          AND NOT EXISTS (SELECT 1 FROM alert_events e WHERE e.alert_id = a.id AND e.valid_time = f.valid_time)
+        GROUP BY a.id, c.id, f.valid_time
+        ORDER BY a.id, f.valid_time""")
+
+
+def add_alert_events(alert_id, events):
+    """Zapis wysłanych godzin alertu: events = [(valid_time, value), ...]."""
+    with psycopg.connect(DATABASE_URL) as conn:
+        conn.cursor().executemany("INSERT INTO alert_events (alert_id, valid_time, value) VALUES (%s, %s, %s)",
+                                  [(alert_id, t, v) for t, v in events])
+
+
 def forecast_point(variable, lat, lon):
     return execute("SELECT valid_time, value FROM forecast WHERE variable = %s AND lat = %s AND lon = %s "
                    "ORDER BY valid_time", variable, lat, lon)
