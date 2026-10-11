@@ -1,12 +1,13 @@
 """Ręczne uruchamianie i podgląd zadań."""
 from typing import Literal
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 
 from app import db
+from app.auth import admin_user
 from app.jobs import runner
 
-router = APIRouter(prefix="/jobs", tags=["jobs"])
+router = APIRouter(prefix="/jobs", tags=["jobs"], dependencies=[Depends(admin_user)])
 
 
 @router.post("/{kind}", status_code=202)

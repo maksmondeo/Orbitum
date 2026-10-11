@@ -10,13 +10,14 @@ CREATE TABLE channels (                                   -- gdzie wysyłać pow
     id      serial PRIMARY KEY,
     user_id int NOT NULL REFERENCES users ON DELETE CASCADE,
     kind    text NOT NULL CHECK (kind IN ('email', 'discord', 'telegram')),
-    target  text NOT NULL                                 -- adres e-mail, webhook albo chat_id
+    target  text NOT NULL,                                -- adres e-mail, webhook albo chat_id
+    UNIQUE (id, user_id)                                  -- cel klucza obcego w alerts: kanał musi należeć do autora alertu
 );
 
 CREATE TABLE alerts (
     id         serial PRIMARY KEY,
     user_id    int NOT NULL REFERENCES users ON DELETE CASCADE,
-    channel_id int NOT NULL REFERENCES channels ON DELETE CASCADE,
+    channel_id int NOT NULL,
     variable   text NOT NULL CHECK (variable IN ('temperature_2m', 'pressure_msl')),
     lat_min    real NOT NULL, lat_max real NOT NULL,      -- punkt: min = max (FR6)
     lon_min    real NOT NULL, lon_max real NOT NULL,
@@ -24,7 +25,8 @@ CREATE TABLE alerts (
     threshold  real NOT NULL,                             -- np. temperatura < 0
     valid_from timestamptz, valid_to timestamptz,         -- przedział czasu; NULL = bez ograniczeń
     active     boolean NOT NULL DEFAULT true,
-    created_at timestamptz NOT NULL DEFAULT now()
+    created_at timestamptz NOT NULL DEFAULT now(),
+    FOREIGN KEY (channel_id, user_id) REFERENCES channels (id, user_id) ON DELETE CASCADE
 );
 
 CREATE TABLE alert_events (                               -- historia wysłanych alertów (FR8), blokuje duplikaty

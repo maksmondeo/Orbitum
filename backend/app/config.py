@@ -6,6 +6,9 @@ import numpy as np
 
 DATABASE_URL = os.environ["DATABASE_URL"]
 TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "")
+JWT_SECRET = os.environ["JWT_SECRET"]
+ADMIN_EMAIL = os.environ.get("ADMIN_EMAIL", "")              # konto z tym e-mailem przy rejestracji dostaje rolę admina
+TOKEN_HOURS = 24 * 7
 DATA = Path(os.environ.get("DATA_DIR", "/data/backtest"))   # cache runów, ERA5 i mapy modeli (wspólne z notebookiem)
 S3 = "https://openmeteo.s3.amazonaws.com"
 
