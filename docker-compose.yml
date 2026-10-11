@@ -1,0 +1,28 @@
+services:
+  db:
+    image: postgres:16
+    env_file: .env
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      retries: 10
+
+  backend:
+    build: ./backend
+    env_file: .env
+    user: "${UID:-1000}:${GID:-1000}"   # pliki w ./predictions zostają własnością użytkownika, nie roota
+    environment:
+      DATA_DIR: /data/backtest
+    volumes:
+      - ./predictions:/data             # cache runów, ERA5 i mapy modeli, wspólne z notebookiem
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  pgdata:

@@ -1,3 +1,5 @@
 .venv/
 .cache*
 predictions/
+.env
+__pycache__/
