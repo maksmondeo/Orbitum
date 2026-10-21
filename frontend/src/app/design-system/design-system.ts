@@ -1,6 +1,6 @@
 import { Component, ElementRef, afterNextRender, inject, signal } from '@angular/core';
-import { contrastRatio } from './contrast';
-import { toHex } from './dom-color';
+import { contrastRatio } from '../color/contrast';
+import { toHex } from '../color/dom-color';
 import { COLOR_PAIRS, EXTRA_SAMPLES, STATE_PAIRS } from './pairs';
 
 interface Measurement {

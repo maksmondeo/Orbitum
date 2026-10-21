@@ -1,7 +1,7 @@
 /// <reference types="node" />
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { discoverForegroundPairs, parseRootTokens } from './css-tokens';
+import { discoverForegroundPairs, parseRootTokens } from '../color/css-tokens';
 import { ALL_PAIRS, COLOR_PAIRS, EXTRA_SAMPLES, STATE_PAIRS } from './pairs';
 
 const css = readFileSync(resolve(process.cwd(), 'src/styles.css'), 'utf8');
