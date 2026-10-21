@@ -31,12 +31,12 @@
   --secondary: var(--color-neutral-100);
   --secondary-foreground: var(--color-neutral-900);
   --muted: var(--color-neutral-100);
-  --muted-foreground: var(--color-neutral-500);
+  --muted-foreground: var(--color-neutral-600);
   --accent: var(--color-neutral-100);
   --accent-foreground: var(--color-neutral-900);
   --border: var(--color-neutral-200);
-  --input: var(--color-neutral-200);
-  --ring: var(--color-neutral-400);
+  --input: var(--color-neutral-500);
+  --ring: var(--color-neutral-500);
 
   --sidebar: var(--color-neutral-50);
   --sidebar-foreground: var(--color-neutral-950);
