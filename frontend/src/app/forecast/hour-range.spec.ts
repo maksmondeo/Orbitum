@@ -1,5 +1,5 @@
 import { HourValue } from './forecast-types';
-import { buildRange, isExpired, startIndex } from './hour-range';
+import { buildRange, hourAt, isExpired, startIndex } from './hour-range';
 
 /** Seria godzinowa od `start` (UTC), `count` godzin. */
 function series(start: string, count: number): HourValue[] {
@@ -34,6 +34,13 @@ describe('hour-range', () => {
 
     it('pusta seria daje null (brak prognozy), a nie wyjątek', () => {
       expect(buildRange([])).toBeNull();
+    });
+  });
+
+  describe('hourAt', () => {
+    it('indeks 0 to pierwsza godzina, a ostatni indeks to ostatnia', () => {
+      expect(hourAt(range, 0)).toEqual(new Date('2026-10-21T19:00:00Z'));
+      expect(hourAt(range, 167)).toEqual(new Date('2026-10-28T18:00:00Z'));
     });
   });
 

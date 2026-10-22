@@ -1,0 +1,34 @@
+<main class="flex h-dvh flex-col">
+  <div class="flex flex-wrap items-end gap-x-8 gap-y-4 border-b p-4">
+    <fieldset class="flex flex-col gap-1">
+      <legend class="mb-1 text-sm font-medium">Zmienna</legend>
+      <div class="inline-flex rounded-md border">
+        @for (v of variables; track v) {
+          <label
+            class="cursor-pointer px-4 py-2 text-sm first:rounded-l-md last:rounded-r-md has-checked:bg-primary has-checked:text-primary-foreground has-focus-visible:outline-2"
+          >
+            <input
+              type="radio"
+              name="variable"
+              class="sr-only"
+              [value]="v"
+              [checked]="variable() === v"
+              (change)="variable.set(v)"
+            />
+            {{ scales[v].label }}
+          </label>
+        }
+      </div>
+    </fieldset>
+
+    @if (range(); as range) {
+      <app-hour-slider class="min-w-64 flex-1" [range]="range" [(index)]="sliderIndex" />
+    }
+
+    <app-map-legend class="min-w-64 flex-1" [scale]="scale()" />
+  </div>
+
+  <div class="min-h-0 flex-1">
+    <app-map-canvas [points]="points()" [scale]="scale()" />
+  </div>
+</main>

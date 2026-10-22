@@ -26,6 +26,11 @@ export function buildRange(series: HourValue[]): HourRange | null {
   };
 }
 
+/** Godzina (UTC), na którą wskazuje indeks suwaka. */
+export function hourAt(range: HourRange, index: number): Date {
+  return new Date(range.first.getTime() + index * HOUR_MS);
+}
+
 /** Indeks najbliższej pełnej godziny do `now`, przycięty do zakresu suwaka. */
 export function startIndex(range: HourRange, now: Date): number {
   const index = Math.round((now.getTime() - range.first.getTime()) / HOUR_MS);
