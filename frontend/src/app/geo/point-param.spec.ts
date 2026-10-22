@@ -21,6 +21,10 @@ describe('parsePoint', () => {
   it('punkt daleko poza Polską daje null', () => {
     expect(parsePoint(params({ lat: '0', lon: '0' }))).toBeNull();
   });
+
+  it('punkt tuż za granicą, ale w prostokącie siatki, daje null', () => {
+    expect(parsePoint(params({ lat: '50.1', lon: '14.4' }))).toBeNull();
+  });
 });
 
 describe('toQueryParams', () => {
