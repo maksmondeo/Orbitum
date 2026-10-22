@@ -171,6 +171,36 @@
     </div>
   </section>
 
+  <section aria-labelledby="ds-data-scales" class="flex flex-col gap-4">
+    <h2 id="ds-data-scales" class="text-2xl font-semibold">Skale kolorów danych</h2>
+    <p class="text-muted-foreground">
+      Kolory rastra na mapie, z <code>map-render/color-scale.ts</code>. To wyjątek od zasady „tylko
+      tokeny”: styl mapy dostaje kolory w kodzie. Pasek nakładki pokazuje te same kolory z
+      półprzezroczystością rastra na jasnym tle, jak podkład mapy.
+    </p>
+
+    @for (scale of scales; track scale.label) {
+      <div class="flex flex-col gap-3">
+        <h3 class="text-xl font-semibold">{{ scale.label }} ({{ scale.unit }})</h3>
+        <div class="h-10 rounded-md border" [style.background]="gradient(scale)"></div>
+        <div class="bg-muted rounded-md border">
+          <div class="h-10 rounded-md opacity-70" [style.background]="gradient(scale)"></div>
+        </div>
+        <ul class="grid grid-cols-2 gap-2 sm:grid-cols-4">
+          @for (stop of scale.stops; track stop.value) {
+            <li class="flex items-center gap-2 text-sm">
+              <span
+                class="size-6 shrink-0 rounded-sm border"
+                [style.background]="swatch(stop.color)"
+              ></span>
+              <span>{{ stop.value }} {{ scale.unit }}</span>
+            </li>
+          }
+        </ul>
+      </div>
+    }
+  </section>
+
   <section aria-labelledby="ds-components" class="flex flex-col gap-4">
     <h2 id="ds-components" class="text-2xl font-semibold">Komponenty</h2>
     <p class="text-muted-foreground">

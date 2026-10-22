@@ -1,6 +1,7 @@
 import { Component, ElementRef, afterNextRender, inject, signal } from '@angular/core';
 import { contrastRatio } from '../color/contrast';
 import { toHex } from '../color/dom-color';
+import { ColorScale, Rgb, SCALES } from '../map-render/color-scale';
 import { COLOR_PAIRS, EXTRA_SAMPLES, STATE_PAIRS } from './pairs';
 
 interface Measurement {
@@ -30,6 +31,7 @@ export default class DesignSystem {
   protected readonly colorPairs = COLOR_PAIRS;
   protected readonly statePairs = STATE_PAIRS;
   protected readonly extraSamples = EXTRA_SAMPLES;
+  protected readonly scales = Object.values(SCALES);
 
   protected readonly typeScale = [
     { name: 'text-3xl', classes: 'text-3xl font-semibold' },
@@ -60,6 +62,20 @@ export default class DesignSystem {
     // Kolory czytamy z wyrenderowanych próbek, a nie z kopii wartości w TS:
     // strona nie może rozjechać się ze stylami.
     afterNextRender(() => this.measure());
+  }
+
+  /** Pasek skali: pozycja stopnia jest proporcjonalna do jego wartości. */
+  protected gradient(scale: ColorScale): string {
+    const min = scale.stops[0].value;
+    const span = scale.stops[scale.stops.length - 1].value - min;
+    const parts = scale.stops.map(
+      (stop) => `${this.swatch(stop.color)} ${(((stop.value - min) / span) * 100).toFixed(1)}%`,
+    );
+    return `linear-gradient(to right, ${parts.join(', ')})`;
+  }
+
+  protected swatch(color: Rgb): string {
+    return `rgb(${color.join(' ')})`;
   }
 
   protected format(m: Measurement): string {
