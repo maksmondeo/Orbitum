@@ -1,0 +1,220 @@
+<main class="mx-auto flex max-w-4xl flex-col gap-12 px-4 py-8 sm:px-6 sm:py-12">
+  <header class="flex flex-col gap-2">
+    <h1 class="text-3xl font-semibold">Design system</h1>
+    <p class="text-muted-foreground">
+      Tokeny wizualne Orbitum. Kontrasty są liczone na żywo z kolorów wyświetlanych próbek (WCAG
+      2.1, poziom AA).
+    </p>
+  </header>
+
+  <section aria-labelledby="ds-colors" class="flex flex-col gap-4">
+    <h2 id="ds-colors" class="text-2xl font-semibold">Kolory</h2>
+    <p class="text-muted-foreground">
+      Pary tło / tekst z konwencji <code>--x</code> i <code>--x-foreground</code>. Wymagany kontrast
+      tekstu: 4,5:1.
+    </p>
+
+    <ul class="grid gap-4 sm:grid-cols-2">
+      @for (pair of colorPairs; track pair.token) {
+        <li class="flex flex-col gap-2">
+          <div
+            class="rounded-lg border p-4"
+            [class]="pair.classes"
+            [attr.data-key]="pair.token"
+            data-kind="text"
+            data-min="4.5"
+          >
+            <p class="font-medium">{{ pair.label }}</p>
+            <p class="text-sm">Zażółć gęślą jaźń 0123456789</p>
+          </div>
+          <p class="text-sm break-words">
+            <code>{{ pair.token }}</code> + <code>{{ pair.foregroundToken }}</code>
+          </p>
+          <p class="text-sm font-medium">
+            @let m = measurements()[pair.token];
+            @if (m) {
+              {{ format(m) }}
+            } @else {
+              Liczenie kontrastu…
+            }
+          </p>
+        </li>
+      }
+    </ul>
+  </section>
+
+  <section aria-labelledby="ds-states" class="flex flex-col gap-4">
+    <h2 id="ds-states" class="text-2xl font-semibold">Stany</h2>
+    <p class="text-muted-foreground">
+      Stan zawsze niesie tekst, a nie tylko kolor (NFR-09). Stany to pary wypełnione.
+    </p>
+    <ul class="grid gap-4 sm:grid-cols-2">
+      @for (pair of statePairs; track pair.token) {
+        <li class="flex flex-col gap-2">
+          <div
+            class="rounded-lg p-4 font-medium"
+            [class]="pair.classes"
+            [attr.data-key]="pair.token"
+            data-kind="text"
+            data-min="4.5"
+          >
+            {{ pair.text }}
+          </div>
+          <p class="text-sm break-words">
+            <code>{{ pair.token }}</code> + <code>{{ pair.foregroundToken }}</code>
+          </p>
+          <p class="text-sm font-medium">
+            @let m = measurements()[pair.token];
+            @if (m) {
+              {{ format(m) }}
+            } @else {
+              Liczenie kontrastu…
+            }
+          </p>
+        </li>
+      }
+    </ul>
+  </section>
+
+  <section aria-labelledby="ds-extra" class="flex flex-col gap-4">
+    <h2 id="ds-extra" class="text-2xl font-semibold">Pozostałe pary</h2>
+    <p class="text-muted-foreground">
+      Tekst pomocniczy na różnych powierzchniach (4,5:1), granice pól i fokus (3:1, kryterium
+      1.4.11). Separator <code>--border</code> jest dekoracyjny i nie podlega kontrolowi.
+    </p>
+    <ul class="grid gap-4 sm:grid-cols-2">
+      @for (sample of extraSamples; track sample.id) {
+        <li class="flex flex-col gap-2">
+          <div
+            class="rounded-lg p-4"
+            [class]="sample.classes"
+            [attr.data-key]="sample.id"
+            [attr.data-kind]="sample.kind"
+            [attr.data-min]="sample.minimum"
+          >
+            {{ sample.label }}
+          </div>
+          <p class="text-sm break-words">
+            <code>{{ sample.tokens }}</code> · {{ sample.criterion }}
+          </p>
+          <p class="text-sm font-medium">
+            @let m = measurements()[sample.id];
+            @if (m) {
+              {{ format(m) }}
+            } @else {
+              Liczenie kontrastu…
+            }
+          </p>
+        </li>
+      }
+    </ul>
+  </section>
+
+  <section aria-labelledby="ds-type" class="flex flex-col gap-4">
+    <h2 id="ds-type" class="text-2xl font-semibold">Typografia</h2>
+    <p class="text-muted-foreground">Font Geist, polskie znaki ze zbioru latin-ext.</p>
+    <ul class="flex flex-col gap-3">
+      @for (step of typeScale; track step.name) {
+        <li class="flex flex-col gap-1 border-b pb-3">
+          <span class="text-muted-foreground text-xs">
+            <code>{{ step.name }}</code>
+          </span>
+          <span [class]="step.classes">Zażółć gęślą jaźń: prognoza dla Polski</span>
+        </li>
+      }
+    </ul>
+  </section>
+
+  <section aria-labelledby="ds-radius" class="flex flex-col gap-4">
+    <h2 id="ds-radius" class="text-2xl font-semibold">Promienie</h2>
+    <ul class="grid grid-cols-2 gap-4 sm:grid-cols-4">
+      @for (radius of radii; track radius.name) {
+        <li class="flex flex-col gap-2">
+          <div class="bg-muted h-20 border" [class]="radius.classes"></div>
+          <code class="text-sm">{{ radius.name }}</code>
+        </li>
+      }
+    </ul>
+  </section>
+
+  <section aria-labelledby="ds-shadow" class="flex flex-col gap-4">
+    <h2 id="ds-shadow" class="text-2xl font-semibold">Cienie</h2>
+    <ul class="grid grid-cols-1 gap-6 sm:grid-cols-3">
+      @for (shadow of shadows; track shadow.name) {
+        <li class="flex flex-col gap-2">
+          <div class="bg-card h-20 rounded-lg" [class]="shadow.classes"></div>
+          <code class="text-sm">{{ shadow.name }}</code>
+        </li>
+      }
+    </ul>
+  </section>
+
+  <section aria-labelledby="ds-focus" class="flex flex-col gap-4">
+    <h2 id="ds-focus" class="text-2xl font-semibold">Fokus</h2>
+    <p class="text-muted-foreground">
+      Przejdź klawiszem Tab przez poniższe elementy: kontur <code>--ring</code> musi być wyraźnie
+      widoczny na tle strony.
+    </p>
+    <div class="flex flex-wrap gap-4">
+      <button
+        type="button"
+        class="bg-primary text-primary-foreground rounded-md px-4 py-2 text-sm font-medium focus-visible:outline-2 focus-visible:outline-offset-2"
+      >
+        Pierwszy element
+      </button>
+      <button
+        type="button"
+        class="bg-secondary text-secondary-foreground rounded-md px-4 py-2 text-sm font-medium focus-visible:outline-2 focus-visible:outline-offset-2"
+      >
+        Drugi element
+      </button>
+    </div>
+  </section>
+
+  <section aria-labelledby="ds-data-scales" class="flex flex-col gap-4">
+    <h2 id="ds-data-scales" class="text-2xl font-semibold">Skale kolorów danych</h2>
+    <p class="text-muted-foreground">
+      Kolory rastra na mapie, z <code>map-render/color-scale.ts</code>. To wyjątek od zasady „tylko
+      tokeny”: styl mapy dostaje kolory w kodzie. Pasek nakładki pokazuje te same kolory z
+      półprzezroczystością rastra na jasnym tle, jak podkład mapy.
+    </p>
+
+    @for (scale of scales; track scale.label) {
+      <div class="flex flex-col gap-3">
+        <h3 class="text-xl font-semibold">{{ scale.label }} ({{ scale.unit }})</h3>
+        <div class="h-10 rounded-md border" [style.background]="gradient(scale)"></div>
+        <div class="bg-muted rounded-md border">
+          <div class="h-10 rounded-md opacity-70" [style.background]="gradient(scale)"></div>
+        </div>
+        <ul class="grid grid-cols-2 gap-2 sm:grid-cols-4">
+          @for (stop of scale.stops; track stop.value) {
+            <li class="flex items-center gap-2 text-sm">
+              <span
+                class="size-6 shrink-0 rounded-sm border"
+                [style.background]="swatch(stop.color)"
+              ></span>
+              <span>{{ stop.value }} {{ scale.unit }}</span>
+            </li>
+          }
+        </ul>
+      </div>
+    }
+  </section>
+
+  <section aria-labelledby="ds-components" class="flex flex-col gap-4">
+    <h2 id="ds-components" class="text-2xl font-semibold">Komponenty</h2>
+    <p class="text-muted-foreground">
+      Miejsce na komponenty UI (przyciski, karty, alerty). Każdy slice, który dodaje komponent,
+      dopisuje tu jego sekcję.
+    </p>
+
+    <div class="flex flex-col gap-2">
+      <h3 class="text-xl font-semibold">Przełącznik zmiennej</h3>
+      <p class="text-muted-foreground">
+        <code>app-variable-switch</code>: natywne radio, strzałki zmieniają opcję. Używany na pasku
+        mapy i w panelu punktu.
+      </p>
+      <app-variable-switch name="ds-variable" [(value)]="sampleVariable" />
+    </div>
+  </section>
+</main>

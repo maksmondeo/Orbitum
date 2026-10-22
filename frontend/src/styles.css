@@ -1,0 +1,139 @@
+@layer theme, base, components, utilities;
+@import 'tailwindcss/theme.css' layer(theme);
+@import 'tailwindcss/preflight.css' layer(base);
+@import 'tailwindcss/utilities.css';
+
+@import '@spartan-ng/brain/hlm-tailwind-preset.css';
+@import '@fontsource-variable/geist';
+/* Warstwa components leży nad base (preflight), więc style kontrolek mapy wygrywają z resetem przycisków. */
+@import 'maplibre-gl/dist/maplibre-gl.css' layer(components);
+/* You can add global styles to this file, and also import other style files */
+
+:root {
+  color-scheme: light;
+
+  --font-sans: 'Geist Variable', system-ui, sans-serif;
+
+  --radius: 0.625rem;
+
+  /*
+   * Warstwa semantyczna: każdy token wskazuje odcień ze skali bazowej Tailwinda
+   * (--color-*). Komponenty używają tylko tych nazw (bg-primary, text-muted-foreground),
+   * nigdy bezpośrednio skali bazowej. Zmiana odcienia = podmiana jednej nazwy tutaj.
+   * Szarości wyłącznie z `neutral` (chroma 0).
+   */
+  --background: var(--color-white);
+  --foreground: var(--color-neutral-950);
+  --card: var(--color-white);
+  --card-foreground: var(--color-neutral-950);
+  --popover: var(--color-white);
+  --popover-foreground: var(--color-neutral-950);
+  --primary: var(--color-neutral-900);
+  --primary-foreground: var(--color-neutral-50);
+  --secondary: var(--color-neutral-100);
+  --secondary-foreground: var(--color-neutral-900);
+  --muted: var(--color-neutral-100);
+  --muted-foreground: var(--color-neutral-600);
+  --accent: var(--color-neutral-100);
+  --accent-foreground: var(--color-neutral-900);
+  --border: var(--color-neutral-200);
+  --input: var(--color-neutral-500);
+  --ring: var(--color-neutral-500);
+
+  --sidebar: var(--color-neutral-50);
+  --sidebar-foreground: var(--color-neutral-950);
+  --sidebar-primary: var(--color-neutral-900);
+  --sidebar-primary-foreground: var(--color-neutral-50);
+  --sidebar-accent: var(--color-neutral-100);
+  --sidebar-accent-foreground: var(--color-neutral-900);
+  --sidebar-border: var(--color-neutral-200);
+  --sidebar-ring: var(--color-neutral-400);
+
+  /*
+   * Stany: jedyne miejsce na kolor chromatyczny w interfejsie (obok danych na mapie).
+   * Pary wypełnione (tło + tekst). Stan zawsze niesie też tekst, nie tylko kolor (NFR-09).
+   */
+  --destructive: var(--color-red-600);
+  --destructive-foreground: var(--color-white);
+  --warning: var(--color-yellow-400);
+  --warning-foreground: var(--color-neutral-950);
+  --success: var(--color-green-700);
+  --success-foreground: var(--color-white);
+  --info: var(--color-blue-600);
+  --info-foreground: var(--color-white);
+
+  /* Cień: neutralna czerń z foreground, bez koloru. */
+  --shadow-color: color-mix(in oklch, var(--color-neutral-950) 12%, transparent);
+
+  /* Domyślne wartości spartana dla wykresów. Nieużywane: skala danych mapy będzie w TypeScripcie. */
+  --chart-1: oklch(0.646 0.222 41.116);
+  --chart-2: oklch(0.6 0.118 184.704);
+  --chart-3: oklch(0.398 0.07 227.392);
+  --chart-4: oklch(0.828 0.189 84.429);
+  --chart-5: oklch(0.769 0.188 70.08);
+}
+
+:root.dark {
+  color-scheme: dark;
+
+  --chart-1: oklch(0.488 0.243 264.376);
+  --chart-2: oklch(0.696 0.17 162.48);
+  --chart-3: oklch(0.769 0.188 70.08);
+  --chart-4: oklch(0.627 0.265 303.9);
+  --chart-5: oklch(0.645 0.246 16.439);
+  --background: oklch(0.145 0 0);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.205 0 0);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.205 0 0);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.922 0 0);
+  --primary-foreground: oklch(0.205 0 0);
+  --secondary: oklch(0.269 0 0);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.269 0 0);
+  --muted-foreground: oklch(0.708 0 0);
+  --accent: oklch(0.269 0 0);
+  --accent-foreground: oklch(0.985 0 0);
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.556 0 0);
+  --sidebar: oklch(0.205 0 0);
+  --sidebar-foreground: oklch(0.985 0 0);
+  --sidebar-primary: oklch(0.985 0 0);
+  --sidebar-primary-foreground: oklch(0.205 0 0);
+  --sidebar-accent: oklch(0.269 0 0);
+  --sidebar-accent-foreground: oklch(0.985 0 0);
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: oklch(0.556 0 0);
+}
+
+/* Rejestracja własnych tokenów jako klas Tailwinda (bg-warning, text-warning-foreground, ...). */
+@theme inline {
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-info: var(--info);
+  --color-info-foreground: var(--info-foreground);
+}
+
+/* Cienie: nadpisują skalę Tailwinda (shadow-sm/md/lg), kolor z --shadow-color. */
+@theme {
+  --shadow-sm: 0 1px 2px 0 var(--shadow-color);
+  --shadow-md: 0 4px 6px -1px var(--shadow-color), 0 2px 4px -2px var(--shadow-color);
+  --shadow-lg: 0 10px 15px -3px var(--shadow-color), 0 4px 6px -4px var(--shadow-color);
+}
+
+@layer base {
+  /* Fokus bez /50: półprzezroczysty pierścień nie spełniłby kontrastu 3:1 (WCAG 1.4.11). */
+  * {
+    @apply border-border outline-ring;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-family: var(--font-sans);
+  }
+}
