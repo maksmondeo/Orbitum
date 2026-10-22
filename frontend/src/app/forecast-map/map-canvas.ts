@@ -9,10 +9,11 @@ import {
   signal,
   viewChild,
 } from '@angular/core';
-import { ImageSource, Map as MapLibreMap, NavigationControl, setWorkerUrl } from 'maplibre-gl';
+import { FillLayerSpecification, ImageSource, LineLayerSpecification, Map as MapLibreMap, NavigationControl, setWorkerUrl } from 'maplibre-gl';
 import { GridPoint } from '../forecast/forecast-types';
 import { ColorScale } from '../map-render/color-scale';
 import { GridImage, gridToImage } from '../map-render/grid-image';
+import { POLAND_MASK, POLAND_RASTER_CLIP } from '../map-render/poland-mask';
 
 /**
  * MapLibre 6 ładuje worker z osobnego pliku, którego bundler Angulara sam nie dołącza.
@@ -23,6 +24,10 @@ const WORKER_URL = new URL('maplibre/maplibre-gl-worker.mjs', document.baseURI).
 const STYLE_URL ='https://tiles.openfreemap.org/styles/positron';
 const SOURCE_ID = 'forecast-raster';
 const LAYER_ID = 'forecast-raster';
+const MASK_SOURCE_ID = 'poland-mask';
+const MASK_LAYER_ID = 'poland-mask';
+const SEA_LAYER_ID = 'forecast-sea';
+const BORDER_LAYER_ID = 'forecast-border';
 
 /** Prostokąt z marginesem wokół Polski, w kolejności [zachód, południe, wschód, północ]. */
 const POLAND_BOUNDS: [number, number, number, number] = [13.9, 48.9, 24.3, 55.1];
@@ -84,7 +89,7 @@ export class MapCanvas {
       if (!map || !this.styleLoaded()) return;
 
       const points = this.points();
-      const image = points ? gridToImage(points, this.scale()) : null;
+      const image = points ? gridToImage(points, this.scale(), undefined, POLAND_RASTER_CLIP) : null;
       this.showRaster(map, image);
     });
   }
@@ -99,6 +104,9 @@ export class MapCanvas {
     const coordinates = cornersOf(image);
 
     if (!map.getSource(SOURCE_ID)) {
+      // Raster idzie pod pierwszą warstwę z napisami: drogi, rzeki i lasy prześwitują przez niego,
+      // a etykiety miast zostają nad kolorami. Dalsze warstwy wskakują tuż nad raster, w tej kolejności.
+      const beforeId = this.firstSymbolLayerId(map);
       map.addSource(SOURCE_ID, { type: 'image', coordinates });
       map.addLayer(
         {
@@ -108,8 +116,26 @@ export class MapCanvas {
           // Bez wygaszania zmiana obrazu nie miga (przydatne przy suwaku godziny).
           paint: { 'raster-fade-duration': 0, 'raster-opacity': RASTER_OPACITY },
         },
-        this.firstSymbolLayerId(map),
+        beforeId,
       );
+      // Maska zakrywa raster poza Polską kolorem tła, czyli tak, jakby rastra tam nie było.
+      map.addSource(MASK_SOURCE_ID, { type: 'geojson', data: POLAND_MASK });
+      map.addLayer(
+        {
+          id: MASK_LAYER_ID,
+          type: 'fill',
+          source: MASK_SOURCE_ID,
+          paint: { 'fill-color': this.backgroundColor(map) },
+        },
+        beforeId,
+      );
+      // Morze z podkładu rysowane drugi raz nad rastrem: Bałtyk zostaje bez koloru, a wybrzeże jest
+      // wektorowe, więc dokładne przy każdym zbliżeniu. Jeziora i rzeki zostają pod rastrem.
+      const sea = this.seaLayer(map);
+      if (sea) map.addLayer(sea, beforeId);
+      // Granica państwa z podkładu też drugi raz, nad maską, żeby była wyraźna wzdłuż krawędzi rastra.
+      const border = this.countryBorderLayer(map);
+      if (border) map.addLayer(border, beforeId);
     }
 
     (map.getSource(SOURCE_ID) as ImageSource).updateImage({ image: imageData, coordinates });
@@ -120,5 +146,36 @@ export class MapCanvas {
   /** Raster idzie pod pierwszą warstwę z napisami, żeby etykiety miast zostały nad kolorami. */
   private firstSymbolLayerId(map: MapLibreMap): string | undefined {
     return map.getStyle().layers.find((layer) => layer.type === 'symbol')?.id;
+  }
+
+  /** Kopia warstwy wody z podkładu, ograniczona do morza (`class = ocean`), z nowym identyfikatorem. */
+  private seaLayer(map: MapLibreMap): FillLayerSpecification | undefined {
+    const water = map
+      .getStyle()
+      .layers.find(
+        (layer): layer is FillLayerSpecification =>
+          layer.type === 'fill' && layer['source-layer'] === 'water',
+      );
+    if (!water) return undefined;
+    const isSea = ['==', ['get', 'class'], 'ocean'];
+    return { ...water, id: SEA_LAYER_ID, filter: ['all', water.filter ?? true, isSea] as never };
+  }
+
+  /** Kopia linii granicy państwa z podkładu (w Positron `boundary_2`), z nowym identyfikatorem. */
+  private countryBorderLayer(map: MapLibreMap): LineLayerSpecification | undefined {
+    const border = map
+      .getStyle()
+      .layers.find(
+        (layer): layer is LineLayerSpecification =>
+          layer.type === 'line' && layer.id === 'boundary_2',
+      );
+    return border && { ...border, id: BORDER_LAYER_ID };
+  }
+
+  /** Kolor tła podkładu (u nas to kolor lądu), żeby maska nie była wpisanym na sztywno kolorem. */
+  private backgroundColor(map: MapLibreMap): string {
+    const background = map.getStyle().layers.find((layer) => layer.type === 'background');
+    const color = background && map.getPaintProperty(background.id, 'background-color');
+    return typeof color === 'string' ? color : 'white';
   }
 }

@@ -1,6 +1,7 @@
 import { GridPoint } from '../forecast/forecast-types';
 import { ColorScale } from './color-scale';
 import { GridImage, gridToImage } from './grid-image';
+import { Ring } from './polygon';
 
 // Wartość 10 daje [40, 0, 0], 50 daje [200, 0, 0], 90 daje [200, 160, 160].
 // Wartości 10 i 90 leżą po dwóch stronach stopnia 50, więc mieszanie wartości i mieszanie
@@ -81,5 +82,27 @@ describe('gridToImage', () => {
     const red = pixel(image, 0, Math.floor(image.height / 2))[0];
     expect(red).toBeGreaterThanOrEqual(45);
     expect(red).toBeLessThanOrEqual(49);
+  });
+
+  describe('z konturem', () => {
+    // Kontur obejmuje tylko lewą część obrazu (długość geograficzna 13–15; obraz ma 13,5–16,5).
+    const leftHalf: Ring = [
+      [13, 49],
+      [15, 49],
+      [15, 53],
+      [13, 53],
+    ];
+    const grid = makeGrid([[10, 10, 10], [10, 10, 10], [10, 10, 10]]);
+
+    it('piksele w konturze są kolorowe, a poza nim przezroczyste', () => {
+      const image = gridToImage(grid, scale, px, leftHalf)!;
+      expect(pixel(image, 2, 0)).toEqual([40, 0, 0, 255]);
+      expect(pixel(image, 12, 0)[3]).toBe(0);
+    });
+
+    it('bez konturu cały obraz jest kolorowy', () => {
+      const image = gridToImage(grid, scale, px)!;
+      expect(pixel(image, 12, 0)).toEqual([40, 0, 0, 255]);
+    });
   });
 });

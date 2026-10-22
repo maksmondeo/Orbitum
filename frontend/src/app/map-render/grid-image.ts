@@ -1,5 +1,6 @@
 import { GridPoint } from '../forecast/forecast-types';
 import { ColorScale, colorAt } from './color-scale';
+import { isInside, Ring } from './polygon';
 
 /** Rogi obrazu w stopniach. Obejmują siatkę powiększoną o pół komórki z każdej strony. */
 export interface GridBounds {
@@ -92,12 +93,15 @@ function sampleGrid(
  * - MapLibre rozciąga obraz równomiernie w odwzorowaniu Mercatora, a dane są równomierne w
  *   szerokości geograficznej. Dlatego dla każdego wiersza pikseli liczymy, jakiej szerokości
  *   odpowiada na mapie, i dopiero dla niej próbkujemy siatkę.
+ * - Gdy podano `clip` (kontur [długość, szerokość]), piksele, których środek leży poza nim, są
+ *   przezroczyste. Położenie piksela liczymy tak samo jak przy próbkowaniu siatki.
  * - Zwraca `null` dla pustej listy (stan „brak prognozy”).
  */
 export function gridToImage(
   points: GridPoint[],
   scale: ColorScale,
   pxPerCell = 8,
+  clip?: Ring,
 ): GridImage | null {
   if (points.length === 0) return null;
 
@@ -144,7 +148,12 @@ export function gridToImage(
     const row = (lat - bounds.south) / latStep - 0.5;
 
     for (let px = 0; px < width; px++) {
-      const col = ((px + 0.5) / width) * colCount - 0.5;
+      const shareFromWest = (px + 0.5) / width;
+      if (clip) {
+        const lon = bounds.west + shareFromWest * (bounds.east - bounds.west);
+        if (!isInside([lon, lat], clip)) continue;
+      }
+      const col = shareFromWest * colCount - 0.5;
       rgba.set(colorAt(scale, sampleGrid(values, rowCount, colCount, row, col)), (py * width + px) * 4);
     }
   }
