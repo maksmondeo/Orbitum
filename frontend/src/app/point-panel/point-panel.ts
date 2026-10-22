@@ -17,6 +17,7 @@ import { ForecastApi } from '../forecast/forecast-api';
 import { PointForecast, Variable } from '../forecast/forecast-types';
 import { distanceKm } from '../geo/geo-distance';
 import { LatLon } from '../geo/lat-lon';
+import { ModelBacktest } from '../model-backtest/model-backtest';
 import { VariableSwitch } from '../variable-switch/variable-switch';
 import { summarizeDays } from './daily-summary';
 import { DayTable } from './day-table';
@@ -67,7 +68,7 @@ function formatCoords(point: LatLon, format: Intl.NumberFormat): string {
 /** Panel prognozy w jednym punkcie: węzeł siatki, odległość od wskazanego miejsca i stany pobierania. */
 @Component({
   selector: 'app-point-panel',
-  imports: [VariableSwitch, DayTable],
+  imports: [VariableSwitch, DayTable, ModelBacktest],
   template: `
     <aside class="flex flex-col gap-4 p-4" aria-label="Prognoza w wybranym punkcie">
       <header class="flex items-start justify-between gap-3">
@@ -153,7 +154,7 @@ function formatCoords(point: LatLon, format: Intl.NumberFormat): string {
       @if (days().length > 0) {
         <app-day-table [days]="days()" [variable]="variable()" />
       }
-      <!-- Tu dojdzie sekcja z wynikami modeli (S-03). -->
+      <app-model-backtest [point]="point()" [variable]="variable()" />
     </aside>
   `,
   host: { class: 'block', '(keydown.escape)': 'closed.emit()' },
