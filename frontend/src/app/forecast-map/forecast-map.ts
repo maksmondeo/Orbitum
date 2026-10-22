@@ -42,7 +42,7 @@ const MESSAGES: Record<Exclude<Status, 'ready'>, { text: string; classes: string
 };
 
 /** Wynik sondy. `failed` to błąd sieci lub serwera, a `range: null` to sondą potwierdzony brak prognozy. */
-interface RangeResult {
+interface ProbeResult {
   attempt: number;
   range: HourRange | null;
   failed: boolean;
@@ -74,14 +74,14 @@ export default class ForecastMap {
   private readonly attempt = signal(0);
 
   /** Wynik sondy (jeden punkt siatki), osobno dla każdej zmiennej. `null`, dopóki nic nie przyszło. */
-  private readonly rangeResult = toSignal(
+  private readonly probeResult = toSignal(
     toObservable(computed(() => ({ variable: this.variable(), attempt: this.attempt() }))).pipe(
       switchMap(({ variable, attempt }) =>
         this.api.singlePointSeries(variable, PROBE_POINT.lat, PROBE_POINT.lon).pipe(
-          map((series): RangeResult => ({ attempt, range: buildRange(series), failed: false })),
+          map((series): ProbeResult => ({ attempt, range: buildRange(series), failed: false })),
           catchError((error: unknown) => {
             console.error('Nie udało się pobrać zakresu godzin', error);
-            return of<RangeResult>({ attempt, range: null, failed: true });
+            return of<ProbeResult>({ attempt, range: null, failed: true });
           }),
         ),
       ),
@@ -93,8 +93,8 @@ export default class ForecastMap {
    * Zakres godzin w bazie. Błąd zostawia poprzedni zakres (suwak nie znika), a pusta seria
    * ustawia `null`: to jest „brak prognozy”.
    */
-  protected readonly range = linkedSignal<RangeResult | null, HourRange | null>({
-    source: this.rangeResult,
+  protected readonly range = linkedSignal<ProbeResult | null, HourRange | null>({
+    source: this.probeResult,
     computation: (result, previous) =>
       result?.failed ? (previous?.value ?? null) : (result?.range ?? null),
   });
@@ -112,8 +112,8 @@ export default class ForecastMap {
     },
   });
 
-  /** Co chcemy mieć na mapie. Równe żądania (ta sama zmienna i godzina) nie budzą strumienia. */
-  private readonly request = computed(
+  /** Co użytkownik wybrał do pokazania na mapie. Równy wybór (ta sama zmienna, godzina i próba) nie budzi strumienia. */
+  private readonly selection = computed(
     () => {
       const range = this.range();
       if (!range) return null;
@@ -132,12 +132,12 @@ export default class ForecastMap {
   );
 
   /**
-   * Ostatnia odpowiedź razem ze zmienną, której dotyczy. Podczas przesuwania suwaka poprzedni
+   * Ostatni wynik pobrania mapy, razem ze zmienną, której dotyczy. Podczas przesuwania suwaka poprzedni
    * raster zostaje na mapie, a po zmianie zmiennej znika, żeby nie dostał obcej skali.
    */
-  private readonly lastLoadedResponse = toSignal(
-    toObservable(this.request).pipe(
-      filter((request) => request !== null),
+  private readonly latestMapResult = toSignal(
+    toObservable(this.selection).pipe(
+      filter((selection) => selection !== null),
       // leading: pierwsze żądanie idzie od razu. trailing: ostatnia pozycja suwaka zawsze
       // zostaje pobrana, nawet jeśli wpadła w okno blokady.
       throttleTime(THROTTLE_MS, asyncScheduler, { leading: true, trailing: true }),
@@ -155,28 +155,28 @@ export default class ForecastMap {
     { initialValue: null },
   );
 
-  /** Odpowiedź, która pasuje do tego, co użytkownik ma teraz wybrane (zmienna i próba). */
-  private readonly currentResponse = computed(() => {
-    const loaded = this.lastLoadedResponse();
+  /** Ostatni wynik, ale tylko jeśli pasuje do tego, co użytkownik ma teraz wybrane (zmienna i próba). */
+  private readonly currentMapResult = computed(() => {
+    const loaded = this.latestMapResult();
     const isCurrent = loaded?.variable === this.variable() && loaded.attempt === this.attempt();
     return isCurrent ? loaded : null;
   });
 
-  protected readonly points = computed(() => this.currentResponse()?.points ?? null);
+  protected readonly points = computed(() => this.currentMapResult()?.points ?? null);
 
   /** Kolejność ma znaczenie: błąd przesłania „brak prognozy”, a ten „wygasłą”. */
   protected readonly status = computed<Status>(() => {
-    const result = this.rangeResult();
+    const result = this.probeResult();
     if (!result || result.attempt !== this.attempt()) return 'loading';
     if (result.failed) return 'error';
 
     const range = this.range();
     if (!range) return 'empty';
 
-    const response = this.currentResponse();
-    if (!response) return 'loading';
-    if (!response.points) return 'error';
-    if (response.points.length === 0) return 'empty';
+    const mapResult = this.currentMapResult();
+    if (!mapResult) return 'loading';
+    if (!mapResult.points) return 'error';
+    if (mapResult.points.length === 0) return 'empty';
 
     return isExpired(range, new Date()) ? 'expired' : 'ready';
   });
