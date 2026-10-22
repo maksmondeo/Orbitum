@@ -12,14 +12,13 @@ import {
   startIndex,
 } from '../forecast/hour-range';
 import { SCALES } from '../map-render/color-scale';
+import { VariableSwitch } from '../variable-switch/variable-switch';
 import { HourSlider } from './hour-slider';
 import { MapCanvas } from './map-canvas';
 import { MapLegend } from './map-legend';
 
 /** Najwyżej jedno żądanie o mapę w tym oknie (patrz `throttleTime` niżej). */
 const THROTTLE_MS = 300;
-
-const VARIABLES = Object.keys(SCALES) as Variable[];
 
 /** Co strona pokazuje w komunikacie nad mapą. `ready` oznacza brak komunikatu. */
 type Status = 'loading' | 'error' | 'empty' | 'expired' | 'ready';
@@ -56,14 +55,12 @@ interface MapResult {
 }
 
 @Component({
-  imports: [MapCanvas, HourSlider, MapLegend],
+  imports: [MapCanvas, HourSlider, MapLegend, VariableSwitch],
   templateUrl: './forecast-map.html',
 })
 export default class ForecastMap {
   private readonly api = inject(ForecastApi);
 
-  protected readonly variables = VARIABLES;
-  protected readonly scales = SCALES;
   protected readonly variable = signal<Variable>('temperature_2m');
   protected readonly scale = computed(() => SCALES[this.variable()]);
 

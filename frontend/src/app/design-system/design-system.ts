@@ -1,7 +1,9 @@
 import { Component, ElementRef, afterNextRender, inject, signal } from '@angular/core';
 import { contrastRatio } from '../color/contrast';
 import { toHex } from '../color/dom-color';
+import { Variable } from '../forecast/forecast-types';
 import { ColorScale, Rgb, SCALES } from '../map-render/color-scale';
+import { VariableSwitch } from '../variable-switch/variable-switch';
 import { COLOR_PAIRS, EXTRA_SAMPLES, STATE_PAIRS } from './pairs';
 
 interface Measurement {
@@ -23,6 +25,7 @@ const ratioFormat = new Intl.NumberFormat('pl-PL', {
 
 @Component({
   selector: 'app-design-system',
+  imports: [VariableSwitch],
   templateUrl: './design-system.html',
 })
 export default class DesignSystem {
@@ -32,6 +35,7 @@ export default class DesignSystem {
   protected readonly statePairs = STATE_PAIRS;
   protected readonly extraSamples = EXTRA_SAMPLES;
   protected readonly scales = Object.values(SCALES);
+  protected readonly sampleVariable = signal<Variable>('temperature_2m');
 
   protected readonly typeScale = [
     { name: 'text-3xl', classes: 'text-3xl font-semibold' },
