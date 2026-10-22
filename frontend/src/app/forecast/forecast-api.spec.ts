@@ -60,6 +60,42 @@ describe('ForecastApi', () => {
     });
   });
 
+  describe('pointForecast', () => {
+    const url = 'http://api.test/forecast';
+
+    it('oddaje węzeł siatki i godziny z Date', () => {
+      let result: unknown;
+      api.pointForecast('temperature_2m', 51.2465, 22.5684).subscribe((p) => (result = p));
+
+      http.expectOne((r) => r.url === url).flush({
+        lat: 51.25,
+        lon: 22.5,
+        values: [{ valid_time: '2026-10-21T19:00:00+00:00', value: 10.5 }],
+      });
+      expect(result).toEqual({
+        lat: 51.25,
+        lon: 22.5,
+        values: [{ validTime: new Date('2026-10-21T19:00:00Z'), value: 10.5 }],
+      });
+    });
+
+    it('to samo żądanie przez pointForecast i singlePointSeries idzie do sieci raz', () => {
+      api.pointForecast('temperature_2m', 52, 19).subscribe();
+      http.expectOne((r) => r.url === url).flush({ lat: 52, lon: 19, values: [] });
+
+      api.singlePointSeries('temperature_2m', 52, 19).subscribe();
+      http.expectNone((r) => r.url === url);
+    });
+
+    it('przekazuje błąd HTTP do subskrybenta', () => {
+      let status: number | undefined;
+      api.pointForecast('temperature_2m', 52, 19).subscribe({ error: (e) => (status = e.status) });
+
+      http.expectOne((r) => r.url === url).flush('boom', { status: 500, statusText: 'Server Error' });
+      expect(status).toBe(500);
+    });
+  });
+
   describe('singlePointSeries', () => {
     it('pyta o zmienną i współrzędne punktu', () => {
       api.singlePointSeries('temperature_2m', 52, 19).subscribe();

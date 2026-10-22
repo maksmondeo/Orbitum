@@ -1,4 +1,4 @@
-import { formatHour } from './warsaw-time';
+import { formatClock, formatDay, formatHour, warsawDayKey, warsawHourOfDay } from './warsaw-time';
 
 describe('formatHour', () => {
   it('formatuje godzinę letnią (UTC+2)', () => {
@@ -36,5 +36,44 @@ describe('formatHour', () => {
     // 2026-03-29: 02:00 CET → 03:00 CEST (o 01:00 UTC)
     expect(formatHour(new Date('2026-03-29T00:00:00Z'))).toBe('niedz., 29.03, 01:00');
     expect(formatHour(new Date('2026-03-29T01:00:00Z'))).toBe('niedz., 29.03, 03:00');
+  });
+});
+
+describe('formatDay', () => {
+  it('daje skrót dnia tygodnia i datę w czasie polskim', () => {
+    expect(formatDay(new Date('2026-10-22T10:00:00Z'))).toBe('czw. 22.10');
+  });
+
+  it('o 23:30 UTC jest już następny dzień polski', () => {
+    expect(formatDay(new Date('2026-10-22T23:30:00Z'))).toBe('pt. 23.10');
+  });
+});
+
+describe('formatClock', () => {
+  it('formatuje samą godzinę', () => {
+    expect(formatClock(new Date('2026-10-22T01:00:00Z'))).toBe('03:00');
+  });
+
+  it('zmiana czasu 25.10: 02:00 CEST i 02:00 CET', () => {
+    expect(formatClock(new Date('2026-10-25T00:00:00Z'))).toBe('02:00 CEST');
+    expect(formatClock(new Date('2026-10-25T01:00:00Z'))).toBe('02:00 CET');
+  });
+});
+
+describe('warsawDayKey', () => {
+  it('doba polska, nie UTC: 22:30 UTC to już północ w Polsce', () => {
+    expect(warsawDayKey(new Date('2026-10-24T22:30:00Z'))).toBe('2026-10-25');
+  });
+
+  it('doba zmiany czasu kończy się o 23:00 UTC', () => {
+    expect(warsawDayKey(new Date('2026-10-25T22:30:00Z'))).toBe('2026-10-25');
+    expect(warsawDayKey(new Date('2026-10-25T23:30:00Z'))).toBe('2026-10-26');
+  });
+});
+
+describe('warsawHourOfDay', () => {
+  it('zwraca godzinę polską w zakresie 0–23', () => {
+    expect(warsawHourOfDay(new Date('2026-10-22T01:00:00Z'))).toBe(3);
+    expect(warsawHourOfDay(new Date('2026-10-22T22:00:00Z'))).toBe(0);
   });
 });
