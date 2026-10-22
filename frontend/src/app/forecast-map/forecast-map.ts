@@ -1,5 +1,6 @@
 import { Component, computed, inject, linkedSignal, signal } from '@angular/core';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
+import { ActivatedRoute, Router } from '@angular/router';
 import { asyncScheduler, catchError, filter, map, of, switchMap, throttleTime } from 'rxjs';
 import { ForecastApi } from '../forecast/forecast-api';
 import { GridPoint, Variable } from '../forecast/forecast-types';
@@ -11,10 +12,13 @@ import {
   PROBE_POINT,
   startIndex,
 } from '../forecast/hour-range';
+import { LatLon } from '../geo/lat-lon';
+import { NO_POINT_PARAMS, parsePoint, toQueryParams } from '../geo/point-param';
 import { SCALES } from '../map-render/color-scale';
+import { PointPanel } from '../point-panel/point-panel';
 import { VariableSwitch } from '../variable-switch/variable-switch';
 import { HourSlider } from './hour-slider';
-import { MapCanvas } from './map-canvas';
+import { MapCanvas, PointSelection } from './map-canvas';
 import { MapLegend } from './map-legend';
 
 /** Najwyżej jedno żądanie o mapę w tym oknie (patrz `throttleTime` niżej). */
@@ -55,11 +59,13 @@ interface MapResult {
 }
 
 @Component({
-  imports: [MapCanvas, HourSlider, MapLegend, VariableSwitch],
+  imports: [MapCanvas, HourSlider, MapLegend, PointPanel, VariableSwitch],
   templateUrl: './forecast-map.html',
 })
 export default class ForecastMap {
   private readonly api = inject(ForecastApi);
+  private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
 
   protected readonly variable = signal<Variable>('temperature_2m');
   protected readonly scale = computed(() => SCALES[this.variable()]);
@@ -183,8 +189,35 @@ export default class ForecastMap {
     return status === 'ready' ? null : MESSAGES[status];
   });
 
+  private readonly queryParams = toSignal(this.route.queryParamMap, { requireSync: true });
+
+  /** Wybrany punkt. Źródłem prawdy jest adres, więc odświeżenie i Wstecz działają bez naszego kodu. */
+  protected readonly point = computed(() => parsePoint(this.queryParams()), {
+    equal: (a, b) => a?.lat === b?.lat && a?.lon === b?.lon,
+  });
+
+  /** Węzeł siatki dla wybranego punktu. Panel podaje go po odpowiedzi; nowy punkt czyści stary węzeł. */
+  protected readonly node = linkedSignal<LatLon | null, LatLon | null>({
+    source: this.point,
+    computation: () => null,
+  });
+
+  protected readonly pointSelection = computed<PointSelection | null>(() => {
+    const click = this.point();
+    return click && { click, node: this.node() };
+  });
+
   protected retry(): void {
     this.attempt.update((n) => n + 1);
+  }
+
+  /** Klik to zwykła nawigacja (z wpisem w historii), więc Wstecz zamyka panel. */
+  protected selectPoint(point: LatLon): void {
+    void this.router.navigate([], { relativeTo: this.route, queryParams: toQueryParams(point) });
+  }
+
+  protected closePanel(): void {
+    void this.router.navigate([], { relativeTo: this.route, queryParams: NO_POINT_PARAMS });
   }
 
   constructor() {

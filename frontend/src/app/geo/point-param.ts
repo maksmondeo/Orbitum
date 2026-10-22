@@ -25,6 +25,9 @@ export function parsePoint(params: { get(name: string): string | null }): LatLon
   return inside ? { lat, lon } : null;
 }
 
+/** Parametry adresu, które zamykają punkt: `router.navigate` usuwa parametr ustawiony na `null`. */
+export const NO_POINT_PARAMS = { lat: null, lon: null } as const;
+
 /** Parametry adresu dla punktu, zaokrąglone do 4 miejsc po przecinku (ok. 11 m). */
 export function toQueryParams(point: LatLon): { lat: string; lon: string } {
   return { lat: point.lat.toFixed(DECIMALS), lon: point.lon.toFixed(DECIMALS) };

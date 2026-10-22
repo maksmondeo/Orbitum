@@ -12,7 +12,7 @@ const VARIABLES = Object.keys(SCALES) as Variable[];
 @Component({
   selector: 'app-variable-switch',
   template: `
-    <fieldset class="flex flex-col gap-1">
+    <fieldset class="flex flex-col items-start gap-1">
       <legend class="mb-1 text-sm font-medium">Zmienna</legend>
       <div class="inline-flex rounded-md border">
         @for (v of variables; track v) {

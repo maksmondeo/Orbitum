@@ -1,62 +1,79 @@
-<main class="flex h-dvh flex-col">
-  <div class="flex shrink-0 flex-wrap items-end gap-x-8 gap-y-3 border-b p-3 sm:p-4">
-    <app-variable-switch name="map-variable" [(value)]="variable" />
+<div class="flex h-dvh flex-col md:flex-row">
+  <main class="flex min-h-0 min-w-0 flex-1 flex-col">
+    <div class="flex shrink-0 flex-wrap items-end gap-x-8 gap-y-3 border-b p-3 sm:p-4">
+      <app-variable-switch name="map-variable" [(value)]="variable" />
 
-    @if (range(); as range) {
-      <app-hour-slider class="min-w-64 flex-1" [range]="range" [(index)]="sliderIndex" />
+      @if (range(); as range) {
+        <app-hour-slider class="min-w-64 flex-1" [range]="range" [(index)]="sliderIndex" />
+      }
+
+      <app-map-legend class="min-w-64 flex-1" [scale]="scale()" />
+    </div>
+
+    @if (message(); as message) {
+      <div
+        class="flex shrink-0 flex-wrap items-center gap-x-3 gap-y-2 px-3 py-2 text-sm sm:px-4"
+        [class]="message.classes"
+        [attr.role]="status() === 'error' ? 'alert' : 'status'"
+      >
+        <svg
+          class="size-5 shrink-0"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
+          @switch (status()) {
+            @case ('loading') {
+              <path class="origin-center animate-spin motion-reduce:animate-none" d="M12 3a9 9 0 1 0 9 9" />
+            }
+            @case ('error') {
+              <circle cx="12" cy="12" r="10" />
+              <path d="M12 7v6M12 16.5h.01" />
+            }
+            @case ('expired') {
+              <path d="M12 3 2 21h20L12 3Z" />
+              <path d="M12 10v4M12 17.5h.01" />
+            }
+            @default {
+              <circle cx="12" cy="12" r="10" />
+              <path d="M12 11v6M12 7.5h.01" />
+            }
+          }
+        </svg>
+        <p class="flex-1">{{ message.text }}</p>
+        @if (status() === 'error') {
+          <button
+            type="button"
+            class="cursor-pointer rounded-md border border-current px-3 py-1 font-medium focus-visible:outline-2 focus-visible:outline-offset-2"
+            (click)="retry()"
+          >
+            Spróbuj ponownie
+          </button>
+        }
+      </div>
     }
 
-    <app-map-legend class="min-w-64 flex-1" [scale]="scale()" />
-  </div>
-
-  @if (message(); as message) {
-    <div
-      class="flex shrink-0 flex-wrap items-center gap-x-3 gap-y-2 px-3 py-2 text-sm sm:px-4"
-      [class]="message.classes"
-      [attr.role]="status() === 'error' ? 'alert' : 'status'"
-    >
-      <svg
-        class="size-5 shrink-0"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="2"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-        aria-hidden="true"
-      >
-        @switch (status()) {
-          @case ('loading') {
-            <path class="origin-center animate-spin motion-reduce:animate-none" d="M12 3a9 9 0 1 0 9 9" />
-          }
-          @case ('error') {
-            <circle cx="12" cy="12" r="10" />
-            <path d="M12 7v6M12 16.5h.01" />
-          }
-          @case ('expired') {
-            <path d="M12 3 2 21h20L12 3Z" />
-            <path d="M12 10v4M12 17.5h.01" />
-          }
-          @default {
-            <circle cx="12" cy="12" r="10" />
-            <path d="M12 11v6M12 7.5h.01" />
-          }
-        }
-      </svg>
-      <p class="flex-1">{{ message.text }}</p>
-      @if (status() === 'error') {
-        <button
-          type="button"
-          class="rounded-md border border-current px-3 py-1 font-medium focus-visible:outline-2 focus-visible:outline-offset-2"
-          (click)="retry()"
-        >
-          Spróbuj ponownie
-        </button>
-      }
+    <div class="min-h-0 flex-1">
+      <app-map-canvas
+        [points]="points()"
+        [scale]="scale()"
+        [selection]="pointSelection()"
+        (pointSelected)="selectPoint($event)"
+      />
     </div>
-  }
+  </main>
 
-  <div class="min-h-0 flex-1">
-    <app-map-canvas [points]="points()" [scale]="scale()" />
-  </div>
-</main>
+  @if (point(); as point) {
+    <app-point-panel
+      class="max-h-1/2 shrink-0 overflow-y-auto border-t md:max-h-none md:w-96 md:border-t-0 md:border-l"
+      [point]="point"
+      [initialVariable]="variable()"
+      (closed)="closePanel()"
+      (nodeResolved)="node.set($event)"
+    />
+  }
+</div>

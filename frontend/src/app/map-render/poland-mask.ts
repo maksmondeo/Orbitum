@@ -1,4 +1,4 @@
-import { Ring } from './polygon';
+import { isInside, Ring } from './polygon';
 
 /**
  * Dane do przycięcia rastra prognozy do Polski. Wszystkie kontury to [długość, szerokość] w stopniach.
@@ -480,3 +480,11 @@ export const POLAND_MASK: { type: 'Polygon'; coordinates: Ring[] } = {
     HOLE,
   ],
 };
+
+/**
+ * Czy punkt leży w Polsce (razem z pasem morza wzdłuż wybrzeża, patrz `HOLE`). Używa dziury maski, a nie samej maski:
+ * maska sięga tylko ok. 0,1° za granicę, więc dalej nic by jej nie trafiło.
+ */
+export function isInPoland(lon: number, lat: number): boolean {
+  return isInside([lon, lat], HOLE);
+}

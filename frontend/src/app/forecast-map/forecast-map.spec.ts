@@ -1,12 +1,14 @@
-import { Component, input } from '@angular/core';
+import { Component, input, output } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
+import { provideRouter, Router } from '@angular/router';
 import { Observable, Subject, of, throwError } from 'rxjs';
 import { ForecastApi } from '../forecast/forecast-api';
-import { GridPoint, HourValue, Variable } from '../forecast/forecast-types';
+import { GridPoint, HourValue, PointForecast, Variable } from '../forecast/forecast-types';
+import { LatLon } from '../geo/lat-lon';
 import { ColorScale } from '../map-render/color-scale';
 import ForecastMap from './forecast-map';
-import { MapCanvas } from './map-canvas';
+import { MapCanvas, PointSelection } from './map-canvas';
 
 /** Okno throttlingu strony (300 ms) z zapasem na pewne jego domknięcie. */
 const THROTTLE_WINDOW = 301;
@@ -16,12 +18,17 @@ const THROTTLE_WINDOW = 301;
 class StubMapCanvas {
   readonly points = input<GridPoint[] | null>(null);
   readonly scale = input.required<ColorScale>();
+  readonly selection = input<PointSelection | null>(null);
+  readonly pointSelected = output<LatLon>();
 }
 
 const DAY: HourValue[] = Array.from({ length: 24 }, (_, i) => ({
   validTime: new Date(Date.UTC(2026, 9, 22, i)),
   value: 0,
 }));
+
+/** Węzeł siatki, który „backend” przypisuje każdemu punktowi w testach. */
+const NODE: PointForecast = { lat: 51.25, lon: 22.5, values: DAY };
 
 /**
  * Sonda domyślnie zwraca 24 godziny od północy UTC (test może ją podmienić).
@@ -33,6 +40,10 @@ class FakeApi {
 
   singlePointSeries() {
     return this.probe;
+  }
+
+  pointForecast() {
+    return of(NODE);
   }
 
   mapForHour(variable: Variable, validTime: Date) {
@@ -82,7 +93,9 @@ describe('ForecastMap', () => {
     vi.spyOn(console, 'error').mockImplementation(() => {});
 
     api = new FakeApi();
-    TestBed.configureTestingModule({ providers: [{ provide: ForecastApi, useValue: api }] });
+    TestBed.configureTestingModule({
+      providers: [{ provide: ForecastApi, useValue: api }, provideRouter([])],
+    });
     TestBed.overrideComponent(ForecastMap, {
       remove: { imports: [MapCanvas] },
       add: { imports: [StubMapCanvas] },
@@ -198,6 +211,72 @@ describe('ForecastMap', () => {
 
       expect(message()?.textContent).toContain('wygasła');
       expect(hourOf(lastCall())).toBe(23);
+    });
+  });
+
+  describe('punkt w adresie', () => {
+    const panel = () => fixture.nativeElement.querySelector('aside');
+
+    /** Otwiera stronę pod danym adresem, jak po wpisaniu go w przeglądarce. */
+    async function openAt(url: string) {
+      await TestBed.inject(Router).navigateByUrl(url);
+      openPage();
+    }
+
+    it('adres z poprawnym punktem pokazuje panel', async () => {
+      await openAt('/?lat=51.2465&lon=22.5684');
+
+      expect(panel()).not.toBeNull();
+    });
+
+    it('brak parametrów albo punkt poza siatką nie pokazuje panelu', async () => {
+      await openAt('/');
+      expect(panel()).toBeNull();
+
+      fixture.destroy();
+      await openAt('/?lat=0&lon=0');
+      expect(panel()).toBeNull();
+    });
+
+    /** Wykonuje akcję, która zmienia adres, i czeka, aż nawigacja się skończy. */
+    async function navigatedBy(action: () => void) {
+      const navigate = vi.spyOn(TestBed.inject(Router), 'navigate');
+      action();
+      await navigate.mock.results[0].value;
+      fixture.detectChanges();
+    }
+
+    it('kliknięcie na mapie ustawia adres', async () => {
+      await openAt('/');
+
+      await navigatedBy(() =>
+        fixture.debugElement
+          .query(By.directive(StubMapCanvas))
+          .componentInstance.pointSelected.emit({ lat: 51.2465, lon: 22.5684 }),
+      );
+
+      expect(TestBed.inject(Router).url).toBe('/?lat=51.2465&lon=22.5684');
+      expect(panel()).not.toBeNull();
+    });
+
+    it('[✕] czyści adres i zamyka panel', async () => {
+      await openAt('/?lat=51.2465&lon=22.5684');
+
+      await navigatedBy(() => panel().querySelector('button[aria-label="Zamknij panel"]').click());
+
+      expect(TestBed.inject(Router).url).toBe('/');
+      expect(panel()).toBeNull();
+    });
+
+    it('węzeł z panelu trafia na mapę razem z klikniętym miejscem', async () => {
+      await openAt('/?lat=51.2465&lon=22.5684');
+      fixture.detectChanges();
+
+      const map = fixture.debugElement.query(By.directive(StubMapCanvas)).componentInstance;
+      expect(map.selection()).toEqual({
+        click: { lat: 51.2465, lon: 22.5684 },
+        node: { lat: 51.25, lon: 22.5 },
+      });
     });
   });
 
