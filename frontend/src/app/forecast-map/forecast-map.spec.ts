@@ -19,6 +19,7 @@ class StubMapCanvas {
   readonly points = input<GridPoint[] | null>(null);
   readonly scale = input.required<ColorScale>();
   readonly selection = input<PointSelection | null>(null);
+  readonly bottomInset = input(0);
   readonly pointSelected = output<LatLon>();
 }
 
@@ -89,6 +90,8 @@ describe('ForecastMap', () => {
     // „Teraz” to 05:10 UTC, więc suwak startuje na godzinie 5.
     vi.useFakeTimers({ toFake: ['Date', 'setTimeout', 'setInterval', 'clearTimeout', 'clearInterval'] });
     vi.setSystemTime(new Date('2026-10-22T05:10:00Z'));
+    // jsdom nie ma ResizeObserver, którym strona mierzy szufladę z panelem.
+    vi.stubGlobal('ResizeObserver', class { observe() {} disconnect() {} });
     // Błędy HTTP są w tych testach zamierzone, więc nie zaśmiecają wyniku.
     vi.spyOn(console, 'error').mockImplementation(() => {});
 
@@ -105,6 +108,7 @@ describe('ForecastMap', () => {
   afterEach(() => {
     vi.useRealTimers();
     vi.restoreAllMocks();
+    vi.unstubAllGlobals();
   });
 
   describe('suwak i zmienna', () => {
@@ -263,6 +267,17 @@ describe('ForecastMap', () => {
       await openAt('/?lat=51.2465&lon=22.5684');
 
       await navigatedBy(() => panel().querySelector('button[aria-label="Zamknij panel"]').click());
+
+      expect(TestBed.inject(Router).url).toBe('/');
+      expect(panel()).toBeNull();
+    });
+
+    it('Esc w panelu czyści adres i zamyka panel', async () => {
+      await openAt('/?lat=51.2465&lon=22.5684');
+
+      await navigatedBy(() =>
+        panel().dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })),
+      );
 
       expect(TestBed.inject(Router).url).toBe('/');
       expect(panel()).toBeNull();

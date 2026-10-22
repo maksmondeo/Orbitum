@@ -1,4 +1,16 @@
-import { Component, computed, effect, inject, input, linkedSignal, output, signal } from '@angular/core';
+import {
+  afterRenderEffect,
+  Component,
+  computed,
+  effect,
+  ElementRef,
+  inject,
+  input,
+  linkedSignal,
+  output,
+  signal,
+  viewChild,
+} from '@angular/core';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { catchError, map, of, switchMap } from 'rxjs';
 import { ForecastApi } from '../forecast/forecast-api';
@@ -60,7 +72,11 @@ function formatCoords(point: LatLon, format: Intl.NumberFormat): string {
     <aside class="flex flex-col gap-4 p-4" aria-label="Prognoza w wybranym punkcie">
       <header class="flex items-start justify-between gap-3">
         <div>
-          <h2 class="text-base font-semibold">{{ title() }}</h2>
+          <h2
+            #heading
+            tabindex="-1"
+            class="text-base font-semibold focus-visible:outline-2 focus-visible:outline-offset-2"
+          >{{ title() }}</h2>
           @if (distance(); as distance) {
             <p class="text-sm text-muted-foreground">{{ distance }}</p>
           }
@@ -140,7 +156,7 @@ function formatCoords(point: LatLon, format: Intl.NumberFormat): string {
       <!-- Tu dojdzie sekcja z wynikami modeli (S-03). -->
     </aside>
   `,
-  host: { class: 'block' },
+  host: { class: 'block', '(keydown.escape)': 'closed.emit()' },
 })
 export class PointPanel {
   private readonly api = inject(ForecastApi);
@@ -233,7 +249,16 @@ export class PointPanel {
     return `${KM_NUMBER.format(distanceKm(this.point(), forecast))} km od wskazanego miejsca`;
   });
 
+  private readonly heading = viewChild.required<ElementRef<HTMLElement>>('heading');
+
   constructor() {
+    // Fokus na nagłówek przy otwarciu i przy każdym nowym punkcie: czytnik zaczyna od panelu,
+    // a Esc działa od razu, bo fokus jest w panelu, a nie na płótnie mapy.
+    afterRenderEffect(() => {
+      this.point();
+      this.heading().nativeElement.focus({ preventScroll: true });
+    });
+
     effect(() => {
       const forecast = this.forecast();
       if (forecast) this.nodeResolved.emit({ lat: forecast.lat, lon: forecast.lon });

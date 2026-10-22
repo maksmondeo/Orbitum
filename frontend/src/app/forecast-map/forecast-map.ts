@@ -1,4 +1,4 @@
-import { Component, computed, inject, linkedSignal, signal } from '@angular/core';
+import { Component, computed, effect, ElementRef, inject, linkedSignal, signal, viewChild } from '@angular/core';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
 import { asyncScheduler, catchError, filter, map, of, switchMap, throttleTime } from 'rxjs';
@@ -207,6 +207,16 @@ export default class ForecastMap {
     return click && { click, node: this.node() };
   });
 
+  /** Panel z szablonu (jest tylko przy wybranym punkcie). */
+  private readonly panel = viewChild(PointPanel, { read: ElementRef });
+
+  /**
+   * Ile pikseli od dołu mapy zasłania szuflada z panelem; 0, gdy panelu nie ma albo stoi obok mapy.
+   * Szuflada to panel z `position: fixed`, więc wysokość mierzymy tylko w tym trybie. Dzięki temu strona
+   * nie zna progu `md` ani wysokości szuflady, a pomiar nadąża za treścią (ładowanie, rozwinięte dni).
+   */
+  protected readonly bottomInset = signal(0);
+
   protected retry(): void {
     this.attempt.update((n) => n + 1);
   }
@@ -222,5 +232,18 @@ export default class ForecastMap {
 
   constructor() {
     performance.mark('forecast-map-start');
+
+    effect((onCleanup) => {
+      const panel: HTMLElement | undefined = this.panel()?.nativeElement;
+      if (!panel) {
+        this.bottomInset.set(0);
+        return;
+      }
+      const observer = new ResizeObserver(() =>
+        this.bottomInset.set(getComputedStyle(panel).position === 'fixed' ? panel.offsetHeight : 0),
+      );
+      observer.observe(panel);
+      onCleanup(() => observer.disconnect());
+    });
   }
 }

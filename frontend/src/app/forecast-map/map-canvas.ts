@@ -113,6 +113,8 @@ export class MapCanvas {
   readonly points = input<GridPoint[] | null>(null);
   readonly scale = input.required<ColorScale>();
   readonly selection = input<PointSelection | null>(null);
+  /** Ile pikseli od dołu zasłania szuflada z panelem (0 = nic). Wskazany punkt ma zostać nad nią. */
+  readonly bottomInset = input(0);
   /** Kliknięcie w Polsce. Kliknięcia poza nią są ignorowane. */
   readonly pointSelected = output<LatLon>();
 
@@ -164,6 +166,22 @@ export class MapCanvas {
       if (!map || !this.styleLoaded()) return;
 
       (map.getSource(SELECTION_SOURCE_ID) as GeoJSONSource).setData(selectionData(this.selection()));
+    });
+
+    // Padding przesuwa środek widoku nad szufladę. Na komputerze (inset 0, padding 0) mapa stoi w miejscu.
+    effect(() => {
+      const map = this.map();
+      if (!map || !this.styleLoaded()) return;
+
+      const bottom = this.bottomInset();
+      const selection = this.selection();
+      if (bottom === 0 && map.getPadding().bottom === 0) return;
+
+      const target = selection && (selection.node ?? selection.click);
+      map.easeTo({
+        padding: { ...map.getPadding(), bottom },
+        ...(target && bottom > 0 && { center: [target.lon, target.lat] as [number, number] }),
+      });
     });
   }
 
