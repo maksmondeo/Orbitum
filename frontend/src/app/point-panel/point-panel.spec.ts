@@ -11,6 +11,9 @@ const NODE: PointForecast = {
   values: [{ validTime: new Date('2026-10-22T12:00:00Z'), value: 8 }],
 };
 
+/** „Teraz” przed godzinami z `NODE`. */
+const NOW = new Date('2026-10-22T00:00:00Z');
+
 /** Zapamiętuje pytania, a odpowiedź podaje test. */
 class FakeApi {
   readonly calls: { variable: Variable; lat: number; lon: number; response: Subject<PointForecast> }[] = [];
@@ -30,6 +33,7 @@ describe('PointPanel', () => {
     const fixture = TestBed.createComponent(PointPanel);
     fixture.componentRef.setInput('point', { lat: 51.2465, lon: 22.5684 });
     fixture.componentRef.setInput('initialVariable', initialVariable);
+    fixture.componentRef.setInput('now', NOW);
     fixture.detectChanges();
 
     const host: HTMLElement = fixture.nativeElement;
@@ -78,6 +82,25 @@ describe('PointPanel', () => {
 
     respond({ ...NODE, values: [] });
     expect(host.querySelector('[role=status]')?.textContent).toContain('Brak prognozy');
+  });
+
+  it('pokazuje tabelę dni, gdy prognoza jest aktualna', () => {
+    const { host, respond } = setup();
+    respond(NODE);
+
+    expect(host.querySelector('table')).not.toBeNull();
+    expect(host.textContent).not.toContain('Prognoza wygasła');
+  });
+
+  it('gdy „teraz” jest po ostatniej godzinie, pokazuje „prognoza wygasła” zamiast tabeli', () => {
+    const { fixture, host, respond } = setup();
+    respond(NODE);
+
+    fixture.componentRef.setInput('now', new Date('2026-10-23T00:00:00Z'));
+    fixture.detectChanges();
+
+    expect(host.querySelector('[role=status]')?.textContent).toContain('Prognoza wygasła');
+    expect(host.querySelector('table')).toBeNull();
   });
 
   it('błąd HTTP daje komunikat z przyciskiem, a ponowienie wysyła żądanie', () => {

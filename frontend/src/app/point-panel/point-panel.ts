@@ -6,8 +6,10 @@ import { PointForecast, Variable } from '../forecast/forecast-types';
 import { distanceKm } from '../geo/geo-distance';
 import { LatLon } from '../geo/lat-lon';
 import { VariableSwitch } from '../variable-switch/variable-switch';
+import { summarizeDays } from './daily-summary';
+import { DayTable } from './day-table';
 
-type Status = 'loading' | 'error' | 'empty' | 'ready';
+type Status = 'loading' | 'error' | 'empty' | 'expired' | 'ready';
 
 /**
  * Teksty i kolory komunikatów. Kolory tylko z tokenów stanu; ikona i tekst niosą znaczenie
@@ -20,6 +22,10 @@ const MESSAGES: Record<Exclude<Status, 'ready'>, { text: string; classes: string
     classes: 'bg-destructive text-destructive-foreground',
   },
   empty: { text: 'Brak prognozy dla tego punktu.', classes: 'bg-info text-info-foreground' },
+  expired: {
+    text: 'Prognoza wygasła. Odśwież stronę, żeby pobrać aktualną.',
+    classes: 'bg-warning text-warning-foreground',
+  },
 };
 
 /** O co pytamy backend. Każda zmiana któregokolwiek pola (także numeru próby) to nowe żądanie. */
@@ -49,7 +55,7 @@ function formatCoords(point: LatLon, format: Intl.NumberFormat): string {
 /** Panel prognozy w jednym punkcie: węzeł siatki, odległość od wskazanego miejsca i stany pobierania. */
 @Component({
   selector: 'app-point-panel',
-  imports: [VariableSwitch],
+  imports: [VariableSwitch, DayTable],
   template: `
     <aside class="flex flex-col gap-4 p-4" aria-label="Prognoza w wybranym punkcie">
       <header class="flex items-start justify-between gap-3">
@@ -105,6 +111,10 @@ function formatCoords(point: LatLon, format: Intl.NumberFormat): string {
                 <circle cx="12" cy="12" r="10" />
                 <path d="M12 7v6M12 16.5h.01" />
               }
+              @case ('expired') {
+                <path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z" />
+                <path d="M12 9v4M12 17h.01" />
+              }
               @default {
                 <circle cx="12" cy="12" r="10" />
                 <path d="M12 11v6M12 7.5h.01" />
@@ -123,6 +133,11 @@ function formatCoords(point: LatLon, format: Intl.NumberFormat): string {
           }
         </div>
       }
+
+      @if (days().length > 0) {
+        <app-day-table [days]="days()" [variable]="variable()" />
+      }
+      <!-- Tu dojdzie sekcja z wynikami modeli (S-03). -->
     </aside>
   `,
   host: { class: 'block' },
@@ -132,6 +147,9 @@ export class PointPanel {
 
   /** Kliknięte miejsce (z adresu). */
   readonly point = input.required<LatLon>();
+  /** „Teraz” do odcinania godzin z przeszłości. Brak wartości = zegar przeglądarki; testy ustawiają własne. */
+  readonly now = input<Date>();
+
   /** Zmienna z mapy w chwili otwarcia panelu. Późniejsze zmiany na pasku mapy panelu nie ruszają. */
   readonly initialVariable = input.required<Variable>();
 
@@ -183,11 +201,18 @@ export class PointPanel {
 
   private readonly forecast = computed(() => this.result()?.forecast ?? null);
 
+  /** Dni z min i max, bez godzin, które już minęły. Puste, gdy brak prognozy albo wygasła. */
+  protected readonly days = computed(() => {
+    const forecast = this.forecast();
+    return forecast ? summarizeDays(forecast.values, this.now() ?? new Date()) : [];
+  });
+
   protected readonly status = computed<Status>(() => {
     const result = this.result();
     if (!result) return 'loading';
     if (!result.forecast) return 'error';
-    return result.forecast.values.length === 0 ? 'empty' : 'ready';
+    if (result.forecast.values.length === 0) return 'empty';
+    return this.days().length === 0 ? 'expired' : 'ready';
   });
 
   protected readonly message = computed(() => {
