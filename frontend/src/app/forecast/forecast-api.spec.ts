@@ -2,7 +2,8 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { API_URL } from '../api/api-url';
-import { CACHE_TTL_MS, ForecastApi } from './forecast-api';
+import { CACHE_TTL_MS } from '../api/cached-request';
+import { ForecastApi } from './forecast-api';
 
 describe('ForecastApi', () => {
   let api: ForecastApi;
