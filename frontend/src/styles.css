@@ -5,6 +5,8 @@
 
 @import '@spartan-ng/brain/hlm-tailwind-preset.css';
 @import '@fontsource-variable/geist';
+/* Warstwa components leży nad base (preflight), więc style kontrolek mapy wygrywają z resetem przycisków. */
+@import 'maplibre-gl/dist/maplibre-gl.css' layer(components);
 /* You can add global styles to this file, and also import other style files */
 
 :root {

@@ -6,6 +6,10 @@ export const routes: Routes = [
     loadComponent: () => import('./design-system/design-system'),
     title: 'Design system',
   },
-  // Tymczasowo: S-01 zastąpi to stroną z mapą.
-  { path: '', pathMatch: 'full', redirectTo: 'design-system' },
+  {
+    path: '',
+    pathMatch: 'full',
+    loadComponent: () => import('./forecast-map/forecast-map'),
+    title: 'Mapa prognozy',
+  },
 ];
