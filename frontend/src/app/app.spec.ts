@@ -15,9 +15,10 @@ describe('App', () => {
     expect(fixture.componentInstance).toBeTruthy();
   });
 
-  it('renders only a router outlet', () => {
+  it('renders the header and a router outlet', () => {
     const fixture = TestBed.createComponent(App);
     const compiled = fixture.nativeElement as HTMLElement;
+    expect(compiled.querySelector('app-header')).not.toBeNull();
     expect(compiled.querySelector('router-outlet')).not.toBeNull();
   });
 });
