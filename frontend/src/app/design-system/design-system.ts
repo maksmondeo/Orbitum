@@ -1,4 +1,8 @@
 import { Component, ElementRef, afterNextRender, inject, signal } from '@angular/core';
+import { HlmButtonImports } from '@spartan-ng/helm/button';
+import { HlmDialogImports } from '@spartan-ng/helm/dialog';
+import { HlmInputImports } from '@spartan-ng/helm/input';
+import { HlmLabelImports } from '@spartan-ng/helm/label';
 import { contrastRatio } from '../color/contrast';
 import { toHex } from '../color/dom-color';
 import { Variable } from '../forecast/forecast-types';
@@ -25,7 +29,7 @@ const ratioFormat = new Intl.NumberFormat('pl-PL', {
 
 @Component({
   selector: 'app-design-system',
-  imports: [VariableSwitch],
+  imports: [VariableSwitch, HlmButtonImports, HlmDialogImports, HlmInputImports, HlmLabelImports],
   templateUrl: './design-system.html',
 })
 export default class DesignSystem {
