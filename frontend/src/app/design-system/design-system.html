@@ -216,5 +216,79 @@
       </p>
       <app-variable-switch name="ds-variable" [(value)]="sampleVariable" />
     </div>
+
+    <div class="flex flex-col gap-2">
+      <h3 class="text-xl font-semibold">Przyciski</h3>
+      <p class="text-muted-foreground">
+        <code>hlmBtn</code> ze spartana. W aplikacji używamy trzech wariantów: domyślnego (główna
+        akcja), <code>outline</code> (druga akcja) i <code>ghost</code> (akcja w tle).
+      </p>
+      <div class="flex flex-wrap gap-4">
+        <button hlmBtn type="button">Domyślny</button>
+        <button hlmBtn variant="outline" type="button">Outline</button>
+        <button hlmBtn variant="ghost" type="button">Ghost</button>
+        <button hlmBtn type="button" disabled>Wyłączony</button>
+      </div>
+    </div>
+
+    <div class="flex flex-col gap-2">
+      <h3 class="text-xl font-semibold">Pola formularza</h3>
+      <p class="text-muted-foreground">
+        Etykieta (<code>hlmLabel</code>), pole (<code>hlmInput</code>), podpowiedź i błąd.
+        Podpowiedź i błąd są połączone z polem przez <code>aria-describedby</code>, a błąd niesie
+        tekst, nie tylko kolor ramki.
+      </p>
+      <div class="flex max-w-sm flex-col gap-4">
+        <div class="flex flex-col gap-2">
+          <label hlmLabel for="ds-hint-field">Hasło</label>
+          <input
+            hlmInput
+            id="ds-hint-field"
+            type="password"
+            autocomplete="new-password"
+            aria-describedby="ds-hint-field-hint"
+          />
+          <p id="ds-hint-field-hint" class="text-muted-foreground text-sm">Co najmniej 8 znaków.</p>
+        </div>
+        <div class="flex flex-col gap-2">
+          <label hlmLabel for="ds-error-field">Adres e-mail</label>
+          <input
+            hlmInput
+            id="ds-error-field"
+            type="email"
+            value="jan@localhost"
+            aria-invalid="true"
+            aria-describedby="ds-error-field-error"
+          />
+          <p id="ds-error-field-error" class="text-destructive text-sm">
+            Podaj adres e-mail w formacie nazwa@domena.pl.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <div class="flex flex-col gap-2">
+      <h3 class="text-xl font-semibold">Okno dialogowe</h3>
+      <p class="text-muted-foreground">
+        <code>hlm-dialog</code>: fokus zostaje w oknie, Esc je zamyka, a fokus wraca na przycisk,
+        który je otworzył.
+      </p>
+      <hlm-dialog>
+        <button hlmBtn hlmDialogTrigger variant="outline" type="button" class="self-start">
+          Otwórz okno
+        </button>
+        <hlm-dialog-content *hlmDialogPortal>
+          <hlm-dialog-header>
+            <h2 hlmDialogTitle>Przykładowe okno</h2>
+            <p hlmDialogDescription>
+              Treść okna. Przejdź klawiszem Tab: fokus nie wychodzi poza okno.
+            </p>
+          </hlm-dialog-header>
+          <hlm-dialog-footer>
+            <button hlmBtn hlmDialogClose type="button">Zamknij</button>
+          </hlm-dialog-footer>
+        </hlm-dialog-content>
+      </hlm-dialog>
+    </div>
   </section>
 </main>

@@ -1,4 +1,11 @@
-import { formatClock, formatDay, formatHour, warsawDayKey, warsawHourOfDay } from './warsaw-time';
+import {
+  formatClock,
+  formatDate,
+  formatDay,
+  formatHour,
+  warsawDayKey,
+  warsawHourOfDay,
+} from './warsaw-time';
 
 describe('formatHour', () => {
   it('formatuje godzinę letnią (UTC+2)', () => {
@@ -46,6 +53,20 @@ describe('formatDay', () => {
 
   it('o 23:30 UTC jest już następny dzień polski', () => {
     expect(formatDay(new Date('2026-10-22T23:30:00Z'))).toBe('pt. 23.10');
+  });
+});
+
+describe('formatDate', () => {
+  it('daje dzień, miesiąc i rok w czasie polskim', () => {
+    expect(formatDate(new Date('2026-10-22T10:00:00Z'))).toBe('22.10.2026');
+  });
+
+  it('o 23:30 UTC jest już następny dzień polski', () => {
+    expect(formatDate(new Date('2026-10-22T23:30:00Z'))).toBe('23.10.2026');
+  });
+
+  it('o północy z 31 grudnia na 1 stycznia zmienia się też rok', () => {
+    expect(formatDate(new Date('2026-12-31T23:30:00Z'))).toBe('01.01.2027');
   });
 });
 

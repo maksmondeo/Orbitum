@@ -60,6 +60,8 @@ interface MapResult {
 
 @Component({
   imports: [MapCanvas, HourSlider, MapLegend, PointPanel, VariableSwitch],
+  // Host komponentu jest domyślnie `inline`, a `h-full` z szablonu działa tylko na elemencie blokowym.
+  host: { class: 'block h-full' },
   templateUrl: './forecast-map.html',
 })
 export default class ForecastMap {

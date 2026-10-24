@@ -17,6 +17,13 @@ const DAY_FORMAT = new Intl.DateTimeFormat('pl-PL', {
   month: '2-digit',
 });
 
+const FULL_DATE_FORMAT = new Intl.DateTimeFormat('pl-PL', {
+  timeZone: 'Europe/Warsaw',
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+});
+
 const CLOCK_FORMAT = new Intl.DateTimeFormat('pl-PL', {
   timeZone: 'Europe/Warsaw',
   hour: '2-digit',
@@ -61,6 +68,11 @@ export function formatDay(date: Date): string {
   const text = (type: Intl.DateTimeFormatPartTypes) => parts.find((p) => p.type === type)!.value;
 
   return `${text('weekday')} ${text('day')}.${text('month')}`;
+}
+
+/** Pełna data w czasie polskim, z rokiem, np. „23.10.2026”. */
+export function formatDate(date: Date): string {
+  return FULL_DATE_FORMAT.format(date);
 }
 
 /** Pora doby w czasie polskim, np. „03:00”; dwuznaczną godzinę opisuje strefa („02:00 CEST”). */

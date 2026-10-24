@@ -2,6 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { Observable, Subject, of } from 'rxjs';
 import { ForecastApi } from '../forecast/forecast-api';
 import { PointForecast, Variable } from '../forecast/forecast-types';
+import { BacktestApi, PointBacktest } from '../model-backtest/backtest-api';
 import { PointPanel } from './point-panel';
 
 /** Węzeł siatki z prawdziwego zapytania dla Lublina (patrz szkic panelu). */
@@ -25,11 +26,23 @@ class FakeApi {
   }
 }
 
+/** Sekcja wyników modeli ma własne testy; tu wystarczy atrapa, która nigdy nie odpowiada. */
+class FakeBacktestApi {
+  modelRanking(): Observable<PointBacktest> {
+    return new Subject<PointBacktest>();
+  }
+}
+
 describe('PointPanel', () => {
   let api: FakeApi;
 
   function setup(initialVariable: Variable = 'temperature_2m') {
-    TestBed.configureTestingModule({ providers: [{ provide: ForecastApi, useValue: api }] });
+    TestBed.configureTestingModule({
+      providers: [
+        { provide: ForecastApi, useValue: api },
+        { provide: BacktestApi, useClass: FakeBacktestApi },
+      ],
+    });
     const fixture = TestBed.createComponent(PointPanel);
     fixture.componentRef.setInput('point', { lat: 51.2465, lon: 22.5684 });
     fixture.componentRef.setInput('initialVariable', initialVariable);
@@ -116,6 +129,15 @@ describe('PointPanel', () => {
 
     expect(api.calls.length).toBe(2);
     expect(host.querySelector('[role=status]')?.textContent).toContain('Ładuję');
+  });
+
+  it('sekcja wyników modeli jest obecna także przy błędzie prognozy', () => {
+    const { fixture, host, lastCall } = setup();
+    lastCall().response.error(new Error('500'));
+    fixture.detectChanges();
+
+    expect(host.querySelector('[role=alert]')?.textContent).toContain('prognozy');
+    expect(host.querySelector('h3')?.textContent).toBe('Jak modele wypadły w tym punkcie');
   });
 
   it('zmiana zmiennej w panelu wysyła żądanie z ciśnieniem', () => {
