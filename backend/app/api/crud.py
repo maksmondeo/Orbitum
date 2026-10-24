@@ -1,9 +1,11 @@
 """Kanały i alerty zalogowanego użytkownika: wspólny CRUD dla obu tabel oraz historia wysłanych alertów."""
 from fastapi import APIRouter, Depends, HTTPException
 
-from app import db
+from app import db, notify
 from app.api.schemas import Alert, Channel
 from app.auth import current_user
+
+TEST_MESSAGE = "✅ Orbitum: wiadomość testowa. Ten kanał działa, alerty będą przychodzić tutaj."
 
 
 def one(rows):
@@ -40,6 +42,21 @@ def owned(table, Body):
 
 channels = owned("channels", Channel)
 alerts = owned("alerts", Alert)
+
+
+@channels.post("/{row_id}/test")
+def send_test(row_id: int, user=Depends(current_user)):
+    """Wiadomość testowa na kanał użytkownika (K1). Błąd wysyłki oddaje jako {code, message}, żeby frontend
+    pokazał radę po kodzie, a nie surowy angielski opis. Dla TELEGRAM_ERROR (zły token, limit, brak sieci)
+    message jest stałym tekstem, bo to nie wina użytkownika (502)."""
+    channel = one(db.execute("SELECT kind, target FROM channels WHERE id = %s AND user_id = %s", row_id, user["id"]))
+    try:
+        notify.send(channel["kind"], channel["target"], TEST_MESSAGE)
+    except notify.SendError as e:
+        if e.code == "TELEGRAM_ERROR":
+            raise HTTPException(502, {"code": e.code, "message": "Nie udało się wysłać wiadomości przez Telegram."})
+        raise HTTPException(400, {"code": e.code, "message": e.description})
+    return {"ok": True}
 
 
 @alerts.get("/events")

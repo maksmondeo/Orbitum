@@ -6,7 +6,7 @@ Problemy i pytania znalezione przy pracy nad projektem, które wymagają decyzji
 
 - **Dotyczy:** backend (kanały, powiadomienia)
 - **Zgłoszone:** 2026-10-19, przy przeglądzie backendu pod frontend
-- **Status:** otwarte
+- **Status:** rozwiązane w PR, czeka na merge
 
 ### Problem
 
@@ -14,16 +14,27 @@ Użytkownik dodaje kanał Telegram, wpisując ręcznie swój `chat_id` (`POST /c
 
 Błąd wychodzi dopiero przy pierwszym alercie. `notify.send` rzuca wyjątek, który kończy się wpisem w logach serwera (`backend/app/jobs/alerts.py:31-32`). Godziny nie trafiają do `alert_events`, więc backend próbuje ponownie przy każdym odświeżeniu, bez końca i po cichu. Użytkownik nie dowie się, że jego kanał nie działa.
 
-### Możliwe rozwiązanie
+### Rozwiązanie
 
-Endpoint `POST /channels/{id}/test`, który wysyła krótką wiadomość testową przez `notify.send`:
+Endpoint `POST /channels/{id}/test` wysyła krótką wiadomość testową przez `notify.send` na kanał zalogowanego użytkownika (`backend/app/api/crud.py`). Cudzy albo nieistniejący kanał daje 404, jak w pozostałych trasach `/channels`.
 
-- Gdy wysyłka się uda, zwraca 200.
-- Gdy się nie uda, zwraca 400 z opisem z Telegrama, na przykład `chat not found` (zły `chat_id` albo brak rozmowy z botem) albo `bot was blocked by the user`. Ten opis jest bezpieczny do pokazania, bo `notify.telegram` celowo nie umieszcza w błędzie URL-a z tokenem (`backend/app/notify.py:10-11`).
+- Gdy wysyłka się uda: `200 {"ok": true}`.
+- Gdy się nie uda: `400` albo `502` z `detail` w postaci obiektu `{"code", "message"}`. Uwaga: w pozostałych trasach `detail` jest tekstem. Frontend czyta `detail.code` i na jego podstawie pokazuje radę po polsku.
 
-Frontend pokaże przycisk „Wyślij wiadomość testową” zaraz po dodaniu kanału i przy każdym kanale na liście. Można też wysyłać test automatycznie przy `POST /channels` i odrzucać kanał, który nie działa.
+| Opis błędu z Telegrama zawiera | Kod | Status | `message` |
+| --- | --- | --- | --- |
+| `chat not found` | `CHAT_NOT_FOUND` | 400 | opis z Telegrama |
+| `can't initiate conversation` | `BOT_NOT_STARTED` | 400 | opis z Telegrama |
+| `bot was blocked by the user` | `BOT_BLOCKED` | 400 | opis z Telegrama |
+| cokolwiek innego (zły albo pusty token, limit zapytań, brak sieci) | `TELEGRAM_ERROR` | 502 | stały tekst |
 
-Dalszy krok, poza tą kwestią: automatyczne podpinanie Telegrama linkiem `t.me/<bot>?start=<kod>`, żeby użytkownik w ogóle nie wpisywał `chat_id`.
+Trzy pierwsze kody wymagają trzech różnych rad: zły numer (`chat not found`), użytkownik nie kliknął „Start” u bota (`can't initiate conversation`) i zablokowany bot. Pierwotny opis tej kwestii wrzucał pierwszy i drugi przypadek do jednego worka. `TELEGRAM_ERROR` to nie wina użytkownika, więc dostaje 502 i stały komunikat zamiast tekstu z Telegrama.
+
+`notify.telegram` rzuca teraz `SendError(code, description)` zamiast `RuntimeError` z surowym JSON-em. Wyjątki `requests` (timeout, brak sieci) też stają się `SendError` przez `raise … from None`, bo ich tekst zawiera URL z tokenem bota (`/bot<TOKEN>/sendMessage`). Dzięki temu token nie trafia ani do odpowiedzi API, ani do logów zadania alertów, które zapisuje `traceback` (`backend/app/jobs/alerts.py:31-32`).
+
+Frontend pokaże przycisk „Wyślij wiadomość testową” przy każdym kanale na liście. Test przy `POST /channels` z odrzucaniem kanału, który nie działa, zostaje poza zakresem: wynik testu nie jest zapisywany w bazie.
+
+Dalszy krok, poza tą kwestią: automatyczne podpinanie Telegrama linkiem `t.me/<bot>?start=<kod>`, żeby użytkownik w ogóle nie wpisywał `chat_id`. Poza wygodą daje to weryfikację właściciela `chat_id`, której backend dziś nie ma: `Channel` w `schemas.py:13-15` sprawdza tylko niepusty tekst, więc można wpisać numer znajomego, który wystartował bota, i to jemu pójdą wiadomości.
 
 **Ustalenie po stronie frontendu (2026-10-20):** wiadomość testowa jest wymagana w v1 (FR-009 w shape-notes), więc ta kwestia blokuje przepływ alertu na obronie. Podpinanie linkiem to późniejsze rozszerzenie.
 
